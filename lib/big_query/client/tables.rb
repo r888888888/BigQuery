@@ -97,11 +97,22 @@ module BigQuery
       #
       # @bq.create_table('new_table', id: { type: 'INTEGER', mode: 'required' })
       # @bq.create_table('new_table', price: { type: 'FLOAT' })
-      def create_table(table_id, schema={})
-        table = Google::Apis::BigqueryV2::Table.new(
+      # @bq.create_table('new_table', {price: { type: 'FLOAT' }}, {enable_partitioning: true, partition_expiration_ms: 10000})
+      def create_table(table_id, schema={}, options={})
+        params = {
           table_reference: { project_id: @project_id, dataset_id: @dataset, table_id: table_id },
           schema: { fields: validate_schema(schema) }
-        )
+        }
+
+        if options[:enable_partitioning]
+          params[:time_partitioning] = {type: "DAY"}
+
+          if options[:partition_expiration_ms]
+            params[:time_partitioning][:expiration_ms] = options[:partition_expiration_ms]
+          end
+        end
+
+        table = Google::Apis::BigqueryV2::Table.new(params)
         api(
           @client.insert_table(
             @project_id,
